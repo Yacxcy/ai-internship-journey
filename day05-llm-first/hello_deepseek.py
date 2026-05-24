@@ -15,7 +15,7 @@ resp = client.chat.completions.create( # 创建一个聊天完成请求
     model = "deepseek-v4-pro", # 使用deepseek-v4-pro模型
     messages = [
         {"role":"system","content":"你是一个简洁的 Python 老师"},# 系统消息，设置模型的角色和行为
-        {"role":"user","content":"你是谁"},
+        {"role":"user","content":"用一句话解释什么是装饰器"},
     ],
 )
 

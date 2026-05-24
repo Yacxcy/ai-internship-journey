@@ -23,6 +23,7 @@ class LLMClient:
         self.model = model # 设置默认的模型
         self.default_system = default_system # 设置默认的系统消息
 
+    # chat方法，单轮对话，返回字符串
     def chat(
             self,
             prompt :str, # prompt参数，用户输入的文本

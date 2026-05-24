@@ -44,7 +44,9 @@ if __name__ == "__main__":
     @retry(times=3)
     # 使用 retry 装饰器来实现 fetch_data 函数的失败重试机制，最多尝试 3 次
     def fetch_data(url :str):
+        # 模拟网络请求，随机失败
         import random
+        # 3.2 如果随机数小于 0.7，模拟网络抖动，抛出 ConnectionError 异常；否则，返回一个字符串表示从指定 URL 获取的数据
         if random.random() < 0.7:
             raise ConnectionError("网络抖动")
         return f"data from {url}"

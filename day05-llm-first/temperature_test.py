@@ -14,7 +14,7 @@ client = OpenAI(
 prompt = "给我一个 Python AI 项目名称的创意，要求好记又有点意思"
 
 # 测试DeepSeek API
-for temp in [0.0,0.7,1.]:
+for temp in [0.0,0.7,1.0]:
     print(f"\n=== temperature={temp} ===")
     for i in range(3):
         resp = client.chat.completions.create(

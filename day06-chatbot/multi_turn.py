@@ -33,3 +33,10 @@ resp = client.chat.completions.create(
 reply = resp.choices[0].message.content
 messages.append({"role":"assistant","content":reply})
 print("Bot:", reply)
+
+# 限制上下文数量
+def truncate_messages(messages,max_pairs=10):
+    """保留 system + 最近 max_pairs 对 user-assistant"""
+    system = [m for m in messages if m["role"] == "system"] # 提取系统消息
+    others = [m for m in messages if m["role"] != "system"]
+    return system + others[-max_pairs*2:] # 保留系统消息和最近的 max_pairs 对 user-assistant 消息
