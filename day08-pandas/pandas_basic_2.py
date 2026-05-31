@@ -28,6 +28,6 @@ df["tax"] = df["salary"] *0.1 # 计算税金，假设税率为10%
 print(df) # 输出更新后的DataFrame
 
 # 6. 写出
-df.to_csv("output.csv",index = False,encoding = "utf-8") # 将DataFrame写出到CSV文件，不包含索引，使用UTF-8编码
+df.to_csv("output.csv",index = False,encoding = "utf-8") # 将DataFrame写出到CSV文件,使用UTF-8编码,index = False 不写出索引
 print("-"*20)
 

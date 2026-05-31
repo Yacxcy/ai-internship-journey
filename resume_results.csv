@@ -1,0 +1,6 @@
+﻿name,age,school,degree,company,position,years,skills,phone,email
+张三,,浙江大学,本科,阿里巴巴,Python 高级开发,4,['Python'],13800138000,
+Lily Chen,28.0,Tsinghua,Master,ByteDance,frontend engineer,3,"['React', 'TypeScript', 'Node.js']",,lily@bytedance.com
+王某某,35.0,清华,本科,美团,技术专家,8,"['分布式系统', 'Java', 'Go', 'MySQL']",,
+刘佳,26.0,复旦,硕士,,,0,['PyTorch'],15000000000,
+赵敏,41.0,上海交大,本科,百度,AI 总监,10,[],,zhao@baidu.com
