@@ -1,0 +1,108 @@
+情感预测太过于单一，其只有单条预测
+
+Running load_rag(...)
+
+codex resume 019ea9e9-9e0c-7f51-bcfc-29f88cd3e67f
+
+- 数据来源真实化：当前默认数据是 configs/config.yaml:6 的 data/demo/course_reviews_120.csv，应改为支持 data/raw/ 下多
+    个真实 CSV 合并，禁止默认用 demo 数据产出正式结论。
+  - 多数据集输入：在 src/sentiment/data_preprocess.py:23 扩展为 load_sentiment_sources()，支持多个文件、不同列名映射、去
+    重、清洗、标签校验和来源字段 source。
+  - 数据质量报告：训练前生成 outputs/reports/data_profile.json，包含样本量、类别分布、来源分布、重复率、文本长度分布，避
+    免“单一数据”和“虚假数据”。
+  - 分层划分增强：当前划分在 src/sentiment/data_preprocess.py:33，建议增加按标签分层、按来源统计，并保存固定的 train/
+    val/test 划分文件，保证实验可复现。
+  - 模型有效性提升：当前训练入口在 src/sentiment/train.py:51，建议增加早停、类别权重、macro-F1 作为主要指标、最佳模型按
+    验证集 macro-F1 保存。
+  - 多模型对比可信化：当前多模型列表在 src/sentiment/run_experiments.py:12，建议加入传统基线模型如 TF-IDF +
+    LogisticRegression/SVM，并保存每个模型的混淆矩阵、分类报告、推理耗时、参数量。
+  - 防止假结果：如果 data/raw/ 没有真实数据，程序应明确报错或提示“请提供真实数据”，而不是自动生成 demo 数据或复用旧输
+    出。
+  - 文档更新：README.md:135 需要说明真实数据格式、多个数据源配置方式、训练命令、评估指标含义，以及 demo 数据仅用于功能演
+    示。
+
+  可直接给 Codex 的 Prompt
+
+  请你修改当前项目 `sentiment_rag_system`，目标是让情感分析模型和多模型分析从“demo/虚假数据演示”升级为“可使用真实多源数
+  据训练、评估和对比”的功能。
+
+  背景：
+  - 当前默认情感数据配置在 `configs/config.yaml` 的 `data.sentiment_csv`，指向 `data/demo/course_reviews_120.csv`。
+  - 当前预处理入口在 `src/sentiment/data_preprocess.py`，主要是 `load_sentiment_csv()` 和 `split_dataframe()`。
+  - 当前训练入口在 `src/sentiment/train.py` 的 `run_training()`。
+  - 当前多模型对比入口在 `src/sentiment/run_experiments.py`，默认模型包括 rnn/lstm/gru/bilstm/textcnn/lstm_attention。
+  - 当前 README 中将 demo 数据作为默认数据说明，这会导致实验结果不真实。
+
+  请按以下要求完成修改：
+
+  1. 数据配置改造
+  - 在 `configs/config.yaml` 中将单一 `data.sentiment_csv` 改为支持多数据源，例如：
+    - `data.sentiment_sources`
+    - 每个 source 包含 `path`、`text_column`、`label_column`、可选 `source_name`
+  - 保留兼容旧的 `sentiment_csv`，但真实训练优先读取 `sentiment_sources`。
+  - 默认正式训练不要强依赖 `data/demo/`，如果 `data/raw/` 没有真实数据，应给出明确错误或警告，不要静默使用 demo 数据生成
+  正式指标。
+
+  2. 多源真实数据加载
+  - 在 `src/sentiment/data_preprocess.py` 中新增 `load_sentiment_sources()`：
+    - 支持读取多个 CSV。
+    - 支持每个 CSV 不同文本列名和标签列名。
+    - 合并后统一为 `text`、`label`、`source` 三列。
+    - 清洗文本、去空值、去重复。
+    - 校验标签只能是 0/1/2，分别表示负面/中性/正面。
+    - 输出清晰的数据错误信息，例如缺列、标签非法、样本过少。
+  - 保留 `load_sentiment_csv()`，但内部可以复用新函数，保证旧调用不崩。
+
+  3. 数据质量报告
+  - 训练前自动生成 `outputs/reports/data_profile.json`。
+  - 内容至少包含：
+    - 总样本数
+    - 标签分布
+    - 来源分布
+    - 每个来源的标签分布
+    - 去重后的样本数
+    - 文本长度 min/max/mean/median
+  - 如果类别极度不均衡，需要在日志中提示。
+
+  4. 训练流程增强
+  - 修改 `src/sentiment/train.py`：
+    - 使用新的多源数据加载逻辑。
+    - 训练/验证/测试集保持分层划分。
+    - 主要保存指标应包含 accuracy、macro_f1、weighted_f1、precision、recall。
+    - 最佳模型不要只按 val accuracy 保存，应优先按 val macro_f1 保存。
+    - 增加类别权重 `class_weights`，缓解真实数据类别不均衡。
+    - 增加 early stopping，配置项可放在 `configs/config.yaml`，例如 `early_stopping_patience`。
+    - 保存 `outputs/reports/sentiment_metrics.json` 时注明数据来源、样本量、模型类型。
+
+  5. 多模型分析增强
+  - 修改 `src/sentiment/run_experiments.py`：
+    - 多模型对比结果必须来自同一份真实数据划分。
+    - 保存 `experiments/sentiment_results/model_comparison.csv`。
+    - 指标至少包括 model_type、accuracy、macro_f1、weighted_f1、train_seconds、inference_seconds_per_sample、
+  num_parameters。
+    - 增加传统机器学习基线模型，例如 TF-IDF + LogisticRegression 和/或 LinearSVM，用于和深度学习模型对照。
+    - 如果真实样本数较少，在输出中提示深度学习结果可能不稳定。
+    - 不允许写入虚假的指标；所有指标必须由实际训练/评估产生。
+
+  6. 输出与可解释性
+  - 每个模型训练完成后，保存对应的分类报告 JSON 和混淆矩阵图片，文件名包含模型名。
+  - 对 attention 模型保留注意力可视化能力。
+  - 不要覆盖不同模型的图表，避免所有模型都写成同一个 `confusion_matrix.png`。
+
+  7. README 更新
+  - 修改 `README.md`：
+    - 明确 demo 数据仅用于功能演示，不可作为论文或正式实验结论。
+    - 增加真实数据准备说明。
+    - 给出多源 CSV 配置示例。
+    - 给出训练命令和多模型对比命令。
+    - 说明评估指标含义，强调 macro-F1 是主要指标。
+    - 说明如果没有真实数据，系统会拒绝生成正式实验结论。
+
+  8. 质量要求
+  - 尽量保持现有项目结构，不要大规模重构。
+  - 不要删除已有 demo 数据和 demo 生成功能，但不要让它成为正式训练的默认依据。
+  - 不要生成假数据、假报告、假实验结果。
+  - 如果本地没有真实数据，请实现代码逻辑和文档，并让程序在正式训练时给出清晰提示。
+  - 修改完成后运行必要的静态检查或最小化验证命令，确保主要入口不会因为语法错误崩溃。
+
+  请先阅读相关文件，再进行最小必要修改。最后总结你修改了哪些文件、如何准备真实数据、如何运行训练和多模型对比。
