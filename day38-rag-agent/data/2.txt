@@ -1,0 +1,464 @@
+上述侧边栏颜色台暗沉了，不美观，优化一下，并且把其侧边栏内的推荐实验命令部分删除，将首页总览界面内容的`comfort_label`
+  是由真实环境字段和透明规则生成的低/中/高舒适度倾向标签，不是人工主观情感标注。部分以及下一步操作部分删除，把数据中心
+  的`comfort_label` 是由真实环境字段和透明规则生成的低/中/高舒适度倾向标签，不是人工主观情感标注。部分删除，并且其字段
+  完整性与分布的表要可以在表内左右拖动使其可以看到右侧隐藏的数据，把模型实验界面的`comfort_label` 是由真实环境字段和透
+  明规则生成的低/中/高舒适度倾向标签，不是人工主观情感标注。部分删除，并且其模型对比实验的模型不需要十个，其抽出对比效
+  果最好的六个模型进行对比，并且其上述实验六个模型都可正确训练，而不是只是训练三个示例模型，并且要保证其模型训练对真实
+  不虚假，把报告中心界面的`comfort_label` 是由真实环境字段和透明规则生成的低/中/高舒适度倾向标签，不是人工主观情感标
+  注。部分删除，并且其rag知识问答同时接入deepseek大模型，其项目下的.env文件中有deepseek的api_key,根据上述任务分析并查看
+  目前项目存在的内容后生成codex很好很成功完成的prompt
+ 你是 deepseek，请在当前项目 `sentiment_rag_system` 中继续完成一次界面与功能优化。请先阅读并理解当前代码，尤其是：
+
+    - `src/web/app.py`
+    - `src/web/styles.py`
+    - `src/web/components.py`
+    - `src/rag/llm.py`
+    - `src/rag/rag_pipeline.py`
+    - `configs/config.yaml`
+    - `.env`
+    - `src/sentiment/run_experiments.py`
+    - `src/sentiment/train.py`
+    - `tests/`
+
+    注意：`.env` 中已有 `DEEPSEEK_API_KEY` 和 `DEEPSEEK_BASE_URL`，不要在终端或回复中泄露 key 内容，只能确认变量是否存
+  在。
+
+    本次任务不是重做整个项目，而是在当前已经完成的真实数据、模型训练、RAG、Streamlit 界面基础上做精准优化。请保持数据真
+    实、模型真实训练、指标不写死、不造假。
+
+    一、侧边栏视觉优化
+
+    当前 `src/web/styles.py` 中侧边栏颜色过暗，例如：
+
+    ```css
+    section[data-testid="stSidebar"] {background:#0f172a;}
+    section[data-testid="stSidebar"] * {color:#e2e8f0;}
+
+    请优化为更明亮、更美观、更符合整体蓝/白/浅灰风格的侧边栏，例如：
+
+    - 浅蓝/白色渐变背景
+    - 深蓝或 slate 色文字
+    - 当前选中项有浅蓝高亮
+    - radio/select 控件视觉清晰
+    - 不要使用大面积深黑/深蓝背景
+    - 与主页面 page-hero、metric card 风格保持一致
+
+    修改位置优先在 src/web/styles.py。
+
+    二、删除侧边栏推荐命令区
+
+    当前 src/web/app.py 的 main() 中有：
+
+    st.sidebar.markdown("**推荐验证命令**")
+    st.sidebar.code(...)
+
+    请删除整个“推荐验证命令”部分。侧边栏只保留：
+
+    - 标题
+    - 简短 caption
+    - 页面导航
+
+    不要再出现实验命令代码块。
+
+    三、删除多个页面中的规则标签提示块
+
+    当前多个页面调用了：
+
+    label_notice()
+
+    该提示内容为：
+
+    comfort_label 是由真实环境字段和透明规则生成的低/中/高舒适度倾向标签，不是人工主观情感标注。
+
+    请从以下页面删除该提示块的调用：
+
+    1. 首页总览：删除 label_notice()，同时删除“下一步操作”整个区域，包括：
+        - section("下一步操作")
+        - action_cards([...])
+    2. 数据中心：删除 label_notice()。
+    3. 模型实验：删除 label_notice()。
+    4. 报告中心：删除 label_notice()。
+
+    可以保留 label_notice() 函数本身，除非完全未使用；如果未使用，可删除函数和相关不再使用的 import，但不要破坏其他页
+  面。
+
+    四、数据中心字段完整性表支持横向查看
+
+    数据中心中“字段完整性与分布”里的字段完整性表目前使用：
+
+    compact_dataframe(completeness, max_rows=30)
+
+    用户希望表格内部可以左右拖动，能看到右侧隐藏数据。请优化 compact_dataframe() 或该处调用，使表格具备更好的横向滚动/
+  宽度
+    表现：
+
+    - 保持 st.dataframe
+    - use_container_width=True
+    - 对字段完整性表，明确设置合适高度，例如 height=260
+    - 如有必要，扩展 compact_dataframe() 支持 height 参数
+    - 不要把表格拆成多列文本
+    - 不要丢失字段
+
+    优先修改 src/web/components.py：
+
+    def compact_dataframe(..., height: int | None = None)
+
+    并在 st.dataframe(..., height=height) 中传入。然后在数据中心字段完整性表处传入固定高度。
+
+    五、模型实验：改为“效果最好的六个模型”真实对比
+
+    当前模型实验页默认只对比三个传统模型：
+
+    FAST_MODELS = ["logistic_regression", "linear_svm", "naive_bayes"]
+
+    用户要求：模型对比实验不需要展示十个模型一起对比，也不能只是三个示例模型；要抽出对比效果最好的六个模型进行对比，并
+  保证
+    这六个模型都能正确真实训练。
+
+    请按以下方式实现：
+
+    1. 保留 MODEL_OPTIONS 作为完整可训练模型列表，供单模型训练选择。
+    2. 新增或替换默认对比模型列表，例如：
+
+    BEST_SIX_MODELS = [
+        ...
+    ]
+
+    3. 这六个模型必须来自当前项目真实支持且能训练成功的模型。
+    4. 不要凭空写死“最佳结果”。请按以下优先策略选择：
+        - 优先读取项目中已有真实多模型历史结果（如 experiments/runs/*/comparison.csv 或 experiments/comfort_results/
+          model_comparison.csv），按 macro_f1 排序选择成功模型前六个；
+        - 如果当前全局 comparison 只有 3 个模型，则提供一个明确的 BEST_SIX_MODELS 默认候选组合，并通过实际运行验证全部
+  成
+          功。
+    5. 推荐默认六模型应兼顾效果与训练可行性，可考虑：
+        - linear_svm
+        - logistic_regression
+        - textcnn
+        - gru
+        - bilstm
+        - lstm_attention
+
+       但最终应以实际训练成功为准。如果某个模型失败，请换成同项目已实现且训练成功的模型，例如 lstm、rnn、
+       bilstm_attention。
+    6. 模型实验页“多模型对比”默认选择这六个模型，不再默认只选三个传统模型。
+    7. 页面文案改为“默认对比当前项目中验证通过的六个代表模型”，不要写“示例模型”。
+    8. 运行真实训练命令验证：
+
+    python -m src.sentiment.run_experiments --models <六个模型>
+
+    9. 若深度模型训练耗时过长，可以适度降低配置中的 epoch 或 batch 参数，但必须真实训练，不允许写死指标，不允许跳过模型
+  冒
+       充成功。
+    10. 对比表仍必须输出真实产物：
+        - experiments/runs/<timestamp>/<model>/metrics.json
+        - model.pkl 或 model.pt
+        - confusion_matrix.png
+        - 深度模型的 vocab.json、training_curve.png
+        - comparison.csv
+        - comparison.md
+        - experiments/comfort_results/model_comparison.csv
+
+    六、RAG 知识问答接入 DeepSeek
+
+    当前 src/rag/llm.py 已经有 DeepSeekLLM，并且会从 .env 读取：
+
+    - DEEPSEEK_API_KEY
+    - DEEPSEEK_BASE_URL
+
+    但 configs/config.yaml 中当前仍为：
+
+    rag:
+      llm_backend: mock
+
+    请将项目默认 RAG 后端接入 DeepSeek：
+
+    rag:
+      llm_backend: deepseek
+      deepseek_model: deepseek-chat
+
+    同时注意：
+
+    1. 不要泄露 .env 中的 key。
+    2. 如果 .env 中没有 key，要给出友好错误提示；但本项目已有 key。
+    3. RAG 页面中不要再强调 mock 模式。
+    4. RAG 页面应显示当前后端为 deepseek。
+    5. RAG 回答仍必须基于检索片段，不能让 DeepSeek 脱离知识库自由发挥。
+    6. 如果检索结果低于相似度阈值，仍然返回：
+
+    知识库中未找到可靠依据，无法基于当前知识库回答该问题。
+
+    7. DeepSeek 调用失败时，页面要有友好错误提示，例如：
+        - API key 缺失
+        - 网络超时
+        - HTTP 错误
+        - 返回格式异常
+
+    可以在 src/rag/llm.py 中增强异常消息，但不要吞掉错误导致假回答。
+
+    七、界面一致性与清理
+
+    请确保界面中不再出现以下不需要内容：
+
+    - 首页总览的规则标签提示块
+    - 首页总览的“下一步操作”
+    - 数据中心的规则标签提示块
+    - 模型实验的规则标签提示块
+    - 报告中心的规则标签提示块
+    - 侧边栏“推荐验证命令”
+    - RAG 页面中不必要的 mock 说明
+
+    但不要删除数据真实性说明文档，也不要删除 README/DATA 中关于规则标签的正式说明。用户只是要求界面中不要出现这些提示
+  块。
+
+    八、验证要求
+
+    完成后请运行以下验证命令，并根据失败信息修复：
+
+    python -m unittest discover -s tests
+    python -m src.sentiment.data_preprocess
+    python -m src.sentiment.run_experiments --models <最终六个模型>
+    python -m src.rag.rag_pipeline --question "CO2 浓度偏高时应该如何改善自习空间舒适度？"
+    2. 侧边栏做了哪些美化。
+    3. 删除了哪些界面内容。
+    4. 最终六个对比模型是哪六个，是否全部真实训练成功。
+    5. 六个模型的核心指标，至少包含 Accuracy、Macro-F1、Weighted-F1。
+    6. DeepSeek 是否成功接入，RAG 问答是否成功返回。
+    7. 运行了哪些验证命令，结果如何。
+    8. 如有失败或网络/API 问题，明确说明原因。
+
+    请严格遵守：不写死指标、不伪造训练、不伪造 RAG 答案、不泄露 .env 密钥。
+
+
+
+› 你是 Codex，请在当前项目 `sentiment_rag_system` 中继续完成一次界面与功能优化。请先阅读并理解当前代码，尤其是：
+
+    - `src/web/app.py`
+    - `src/web/styles.py`
+    - `src/web/components.py`
+    - `src/rag/llm.py`
+    - `src/rag/rag_pipeline.py`
+    - `configs/config.yaml`
+    - `.env`
+    - `src/sentiment/run_experiments.py`
+    - `src/sentiment/train.py`
+    - `tests/`
+
+    注意：`.env` 中已有 `DEEPSEEK_API_KEY` 和 `DEEPSEEK_BASE_URL`，不要在终端或回复中泄露 key 内容，只能确认变量是否存
+  在。
+
+    本次任务不是重做整个项目，而是在当前已经完成的真实数据、模型训练、RAG、Streamlit 界面基础上做精准优化。请保持数据真
+    实、模型真实训练、指标不写死、不造假。
+
+    一、侧边栏视觉优化
+
+    当前 `src/web/styles.py` 中侧边栏颜色过暗，例如：
+
+    ```css
+    section[data-testid="stSidebar"] {background:#0f172a;}
+    section[data-testid="stSidebar"] * {color:#e2e8f0;}
+
+    请优化为更明亮、更美观、更符合整体蓝/白/浅灰风格的侧边栏，例如：
+
+    - 浅蓝/白色渐变背景
+    - 深蓝或 slate 色文字
+    - 当前选中项有浅蓝高亮
+    - radio/select 控件视觉清晰
+    - 不要使用大面积深黑/深蓝背景
+    - 与主页面 page-hero、metric card 风格保持一致
+
+    修改位置优先在 src/web/styles.py。
+
+    二、删除侧边栏推荐命令区
+
+    当前 src/web/app.py 的 main() 中有：
+
+    st.sidebar.markdown("**推荐验证命令**")
+    st.sidebar.code(...)
+
+    请删除整个“推荐验证命令”部分。侧边栏只保留：
+
+    - 标题
+    - 简短 caption
+    - 页面导航
+
+    不要再出现实验命令代码块。
+
+    三、删除多个页面中的规则标签提示块
+
+    当前多个页面调用了：
+
+    label_notice()
+
+    该提示内容为：
+
+    comfort_label 是由真实环境字段和透明规则生成的低/中/高舒适度倾向标签，不是人工主观情感标注。
+
+    请从以下页面删除该提示块的调用：
+
+    1. 首页总览：删除 label_notice()，同时删除“下一步操作”整个区域，包括：
+        - section("下一步操作")
+        - action_cards([...])
+    2. 数据中心：删除 label_notice()。
+    3. 模型实验：删除 label_notice()。
+    4. 报告中心：删除 label_notice()。
+
+    可以保留 label_notice() 函数本身，除非完全未使用；如果未使用，可删除函数和相关不再使用的 import，但不要破坏其他页
+  面。
+
+    四、数据中心字段完整性表支持横向查看
+
+    数据中心中“字段完整性与分布”里的字段完整性表目前使用：
+
+    compact_dataframe(completeness, max_rows=30)
+
+    用户希望表格内部可以左右拖动，能看到右侧隐藏数据。请优化 compact_dataframe() 或该处调用，使表格具备更好的横向滚动/
+  宽度
+    表现：
+
+    - 保持 st.dataframe
+    - use_container_width=True
+    - 对字段完整性表，明确设置合适高度，例如 height=260
+    - 如有必要，扩展 compact_dataframe() 支持 height 参数
+    - 不要把表格拆成多列文本
+    - 不要丢失字段
+
+    优先修改 src/web/components.py：
+
+    def compact_dataframe(..., height: int | None = None)
+
+    并在 st.dataframe(..., height=height) 中传入。然后在数据中心字段完整性表处传入固定高度。
+
+    五、模型实验：改为“效果最好的六个模型”真实对比
+
+    当前模型实验页默认只对比三个传统模型：
+
+    FAST_MODELS = ["logistic_regression", "linear_svm", "naive_bayes"]
+
+    用户要求：模型对比实验不需要展示十个模型一起对比，也不能只是三个示例模型；要抽出对比效果最好的六个模型进行对比，并
+  保证
+    这六个模型都能正确真实训练。
+
+    请按以下方式实现：
+
+    1. 保留 MODEL_OPTIONS 作为完整可训练模型列表，供单模型训练选择。
+    2. 新增或替换默认对比模型列表，例如：
+
+    BEST_SIX_MODELS = [
+        ...
+    ]
+
+    3. 这六个模型必须来自当前项目真实支持且能训练成功的模型。
+    4. 不要凭空写死“最佳结果”。请按以下优先策略选择：
+        - 优先读取项目中已有真实多模型历史结果（如 experiments/runs/*/comparison.csv 或 experiments/comfort_results/
+          model_comparison.csv），按 macro_f1 排序选择成功模型前六个；
+        - 如果当前全局 comparison 只有 3 个模型，则提供一个明确的 BEST_SIX_MODELS 默认候选组合，并通过实际运行验证全部
+  成
+          功。
+    5. 推荐默认六模型应兼顾效果与训练可行性，可考虑：
+        - linear_svm
+        - logistic_regression
+        - textcnn
+        - gru
+        - bilstm
+        - lstm_attention
+
+       但最终应以实际训练成功为准。如果某个模型失败，请换成同项目已实现且训练成功的模型，例如 lstm、rnn、
+       bilstm_attention。
+    6. 模型实验页“多模型对比”默认选择这六个模型，不再默认只选三个传统模型。
+    7. 页面文案改为“默认对比当前项目中验证通过的六个代表模型”，不要写“示例模型”。
+    8. 运行真实训练命令验证：
+
+    python -m src.sentiment.run_experiments --models <六个模型>
+
+    9. 若深度模型训练耗时过长，可以适度降低配置中的 epoch 或 batch 参数，但必须真实训练，不允许写死指标，不允许跳过模型
+  冒
+       充成功。
+    10. 对比表仍必须输出真实产物：
+        - experiments/runs/<timestamp>/<model>/metrics.json
+        - model.pkl 或 model.pt
+        - confusion_matrix.png
+        - 深度模型的 vocab.json、training_curve.png
+        - comparison.csv
+        - comparison.md
+        - experiments/comfort_results/model_comparison.csv
+
+    六、RAG 知识问答接入 DeepSeek
+
+    当前 src/rag/llm.py 已经有 DeepSeekLLM，并且会从 .env 读取：
+
+    - DEEPSEEK_API_KEY
+    - DEEPSEEK_BASE_URL
+
+    但 configs/config.yaml 中当前仍为：
+
+    rag:
+      llm_backend: mock
+
+    请将项目默认 RAG 后端接入 DeepSeek：
+
+    rag:
+      llm_backend: deepseek
+      deepseek_model: deepseek-chat
+
+    同时注意：
+
+    1. 不要泄露 .env 中的 key。
+    2. 如果 .env 中没有 key，要给出友好错误提示；但本项目已有 key。
+    3. RAG 页面中不要再强调 mock 模式。
+    4. RAG 页面应显示当前后端为 deepseek。
+    5. RAG 回答仍必须基于检索片段，不能让 DeepSeek 脱离知识库自由发挥。
+    6. 如果检索结果低于相似度阈值，仍然返回：
+
+    知识库中未找到可靠依据，无法基于当前知识库回答该问题。
+
+    7. DeepSeek 调用失败时，页面要有友好错误提示，例如：
+        - API key 缺失
+        - 网络超时
+        - HTTP 错误
+        - 返回格式异常
+
+    可以在 src/rag/llm.py 中增强异常消息，但不要吞掉错误导致假回答。
+
+    七、界面一致性与清理
+
+    请确保界面中不再出现以下不需要内容：
+
+    - 首页总览的规则标签提示块
+    - 首页总览的“下一步操作”
+    - 数据中心的规则标签提示块
+    - 模型实验的规则标签提示块
+    - 报告中心的规则标签提示块
+    - 侧边栏“推荐验证命令”
+    - RAG 页面中不必要的 mock 说明
+
+    但不要删除数据真实性说明文档，也不要删除 README/DATA 中关于规则标签的正式说明。用户只是要求界面中不要出现这些提示
+  块。
+
+    八、验证要求
+
+    完成后请运行以下验证命令，并根据失败信息修复：
+
+    python -m unittest discover -s tests
+    python -m src.sentiment.data_preprocess
+    python -m src.sentiment.run_experiments --models <最终六个模型>
+    python -m src.rag.rag_pipeline --question "CO2 浓度偏高时应该如何改善自习空间舒适度？"
+    - 不要伪造成功；
+    - 明确记录失败原因；
+    - 保证代码逻辑和错误提示正确；
+    - RAG 检索本身仍可构建和评估。
+
+    九、最终回复要求
+
+    完成后请用中文简洁说明：
+
+    1. 修改了哪些核心文件。
+    2. 侧边栏做了哪些美化。
+    3. 删除了哪些界面内容。
+    4. 最终六个对比模型是哪六个，是否全部真实训练成功。
+    5. 六个模型的核心指标，至少包含 Accuracy、Macro-F1、Weighted-F1。
+    6. DeepSeek 是否成功接入，RAG 问答是否成功返回。
+    7. 运行了哪些验证命令，结果如何。
+    8. 如有失败或网络/API 问题，明确说明原因。
+
+    请严格遵守：不写死指标、不伪造训练、不伪造 RAG 答案、不泄露 .env 密钥。
