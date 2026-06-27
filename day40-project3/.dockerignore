@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.git/
+.vscode/
+.idea/
+.env
+.env.*
+*.log
+data/chroma_db/
+data/checkpoints.db
+tests/

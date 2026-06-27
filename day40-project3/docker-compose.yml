@@ -1,0 +1,46 @@
+# Docker Compose 配置文件，定义了项目的两个主要服务：API服务和前端服务
+services:
+  # API服务配置
+  api:
+    # 使用当前目录下的Dockerfile进行构建
+    build: .
+    # 设置容器名称为project3-api
+    container_name: project3-api
+    # 端口映射：将主机的8000端口映射到容器的8000端口
+    ports:
+      - "8000:8000"
+    # 指定环境变量文件
+    env_file:
+      - .env
+    # 数据卷挂载：将当前目录下的data目录挂载到容器的/app/data目录
+    volumes:
+      # 持久化向量库 + 上传的文档
+      - ./data:/app/data
+    # 重启策略：除非手动停止，否则容器总是自动重启
+    restart: unless-stopped
+
+  # 前端服务配置
+  frontend:
+    # 构建配置：指定构建上下文和Dockerfile
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    # 设置容器名称为project3-frontend
+    container_name: project3-frontend
+    # 端口映射：将主机的8501端口映射到容器的8501端口
+    ports:
+      - "8501:8501"
+    # 指定环境变量文件
+    env_file:
+      - .env
+    # 环境变量设置：API基础URL
+    environment:
+      - API_BASE=http://api:8000
+    # 数据卷挂载：持久化数据库文件
+    volumes:
+      - ./data:/app/data
+    # 依赖关系：前端服务依赖于API服务，确保API服务先启动
+    depends_on:
+      - api
+    # 重启策略：除非手动停止，否则容器总是自动重启
+    restart: unless-stopped
