@@ -20,4 +20,5 @@ dependencies = [
     "python-multipart>=0.0.9",
     "numexpr>=2.10",
     "streamlit>=1.30",
+    "markdown>=3.7",
 ]
